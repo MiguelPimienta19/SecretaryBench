@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aisa": {
+      "command": "bash",
+      "args": ["-c", "uv run python -m mcp_server"]
+    }
+  }
+}
