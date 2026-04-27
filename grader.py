@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 import os
 from typing import Union
@@ -10,7 +11,48 @@ from app.models.calendar import CalendarResponse
 from app.models.todo import TodoResponse
 
 
-#NOTE: Stub logic: non-empty criteria = 1 point. Real logic TBD by team.
+_NO_ACTION = re.compile(r"no\s*action", re.IGNORECASE)
+
+
+def _check_criteria(criteria: str, calendar: CalendarResponse, todo: list[TodoResponse]) -> bool:
+    """
+    Check a single criteria string against tool state using prefix-level matching.
+    TC- = a todo should have been created
+    CC- = a calendar event should have been created
+    No action = nothing should have been created
+    RS- = a reschedule happened (event exists — rough check)
+
+    Exact date/content verification is not yet implemented.
+    """
+    if not criteria or not criteria.strip():
+        return False
+
+    criteria = criteria.strip()
+
+    # "No action" — model should have done nothing
+    if _NO_ACTION.search(criteria):
+        return len(todo) == 0 and len(calendar.events) == 0
+
+    passed = True
+
+    # TC- prefix — check that at least one todo exists
+    if "TC" in criteria.upper():
+        if len(todo) == 0:
+            passed = False
+
+    # CC- prefix — check that at least one calendar event exists
+    if "CC" in criteria.upper():
+        if len(calendar.events) == 0:
+            passed = False
+
+    # RS- prefix — check that an event exists (rough: reschedule implies event was modified)
+    if "RS" in criteria.upper():
+        if len(calendar.events) == 0:
+            passed = False
+
+    return passed
+
+
 def define_grading_system(
     input: Union[Email, Scenario],
     calendar: CalendarResponse,
@@ -38,19 +80,16 @@ def define_grading_system(
     else:
         raise TypeError(f"Expected Email or Scenario, got {type(input).__name__}")
 
-    # Score each criteria entry
-    # TO BE IMPLEMENTED: non-empty string = 1 point.
-    # In the future implementation inspect calendar and todo to verify actions were taken.
+    # Score each criteria entry by checking the prefix against tool state.
+    # TC- = todo should exist, CC- = calendar event should exist, No action = nothing should exist.
+    # Date/content verification still TBD — only action TYPE is checked for now.
     score = 0
     details = []
 
-    # This is very rough, and not at all what will be final but I wanted to make sure we had something. 
     for criteria in criteria_list:
-        if criteria and criteria.strip():
-            passed = True
+        passed = _check_criteria(criteria, calendar, todo)
+        if passed:
             score += 1
-        else:
-            passed = False
 
         details.append({
             "criteria": criteria,
