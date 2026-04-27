@@ -33,6 +33,7 @@ Represents a single email message.
 | `body` | `str` | Full email body — placeholders like `{date-nextweek}` are kept raw |
 | `sender` | `str` | Who sent the email (e.g. `"V"`, `"CEO"`) |
 | `recipients` | `list[str]` | List of recipients, split from comma-separated string |
+| `success_criteria` | `str or None` | What a successful action looks like for this specific email. `None` if not specified in the sheet |
 
 ### `Scenario`
 Represents a full scenario — one or more emails that belong together.
@@ -42,7 +43,7 @@ Represents a full scenario — one or more emails that belong together.
 | `scenario_id` | `str` | Unique ID. Falls back to `scenario_type` if blank in the sheet |
 | `scenario_type` | `str` | Type code from the sheet (e.g. `"T01"`, `"N02"`, `"C08"`) |
 | `emails` | `list[Email]` | All emails in this scenario, sorted by email number |
-| `success_criteria` | `str or None` | What the correct response looks like. `None` if not filled in |
+| `success_criteria` | `list[str]` | Collected from every email in the scenario that has criteria. Multi-email scenarios may have criteria on only the last email, or on multiple emails (e.g. C25 has criteria on emails 1 and 3) |
 | `puzzle_summary` | `str or None` | Plain-English description of the scenario. `None` if not filled in |
 
 ---

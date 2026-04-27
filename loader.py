@@ -12,6 +12,7 @@ class Email:
     body: str                # the full email body text
     sender: str              # who sent the email
     recipients: list[str]    # list of recipients
+    success_criteria: Optional[str] = None  # what a successful action looks like for this email
 
 
 @dataclass
@@ -19,7 +20,7 @@ class Scenario:
     scenario_id: str                  # unique ID for this scenario
     scenario_type: str                # type code from the sheet
     emails: list[Email]               # all emails in this scenario which is now sorted by email number
-    success_criteria: Optional[str]   # what correct response looks like
+    success_criteria: list[str]       # collected criteria from all emails in this scenario
     puzzle_summary: Optional[str]     # basic description of the scenario
 
 
@@ -59,7 +60,7 @@ def _parse_sheet(df: pd.DataFrame) -> list[Scenario]:
         group = group.sort_values("_email_num", na_position="last")  # ranks them from numbered emails first to unnumbered last but unsure if thats how it should play out
 
         emails: list[Email] = []           # collects Email objects for this scenario
-        success_criteria: Optional[str] = None
+        all_criteria: list[str] = []       # collected from every email that has criteria
         puzzle_summary: Optional[str] = None
 
         for _, row in group.iterrows():  # iterate over each email row in this scenario
@@ -80,6 +81,8 @@ def _parse_sheet(df: pd.DataFrame) -> list[Scenario]:
             except (ValueError, TypeError):
                 email_num = 0  # if conversion fails for any reason, default to 0
 
+            sc = _clean_str(row.get("Success Criteria"))
+
             emails.append(
                 Email(
                     email_number=email_num,
@@ -87,15 +90,13 @@ def _parse_sheet(df: pd.DataFrame) -> list[Scenario]:
                     body=_clean_str(row.get("Body")) or "",        # placeholders like {date} kept raw(as was)
                     sender=_clean_str(row.get("Sender")) or "",
                     recipients=recipients,
+                    success_criteria=sc,                           # per-email criteria (None if blank)
                 )
             )
 
-            # Success Criteria and Puzzle Summary only appear on one row per scenario but im unsure if thats how we want it
-            # It grabs the success criteria from whichever row has it and stores it on the whole scenario insted of each individual email.
-
-            sc = _clean_str(row.get("Success Criteria"))
-            if sc:                      # only overwrite if this row actually has a value
-                success_criteria = sc
+            # Collect non-null criteria into scenario-level list
+            if sc:
+                all_criteria.append(sc)
             ps = _clean_str(row.get("Puzzle Summary"))
             if ps:
                 puzzle_summary = ps
@@ -108,7 +109,7 @@ def _parse_sheet(df: pd.DataFrame) -> list[Scenario]:
                 scenario_id=scenario_id,
                 scenario_type=scenario_type,
                 emails=emails,
-                success_criteria=success_criteria,
+                success_criteria=all_criteria,
                 puzzle_summary=puzzle_summary,
             )
         )
@@ -140,6 +141,6 @@ if __name__ == "__main__":
         for e in s.emails:
             print(f"  Email #{e.email_number}: {e.subject!r}")
             print(f"    From: {e.sender!r}  To: {e.recipients}")
-            #print(f"    Body: {e.body[:80]!r}{'...' if len(e.body) > 80 else ''}")  # this basiccaly cuts it off at a limit ending it in ... if you want to use it
+            print(f"    Criteria: {e.success_criteria!r}")
             print(f"    Body: {e.body}")
         print()
