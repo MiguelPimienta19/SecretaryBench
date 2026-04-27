@@ -27,3 +27,6 @@ htmlcov/
 
 # Claude Code
 .claude/
+
+# Internal planning docs (not for the public repo)
+Instructions/Sprint 2 Questions and Delegation.pdf

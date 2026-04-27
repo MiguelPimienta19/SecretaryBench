@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import re
-import sys
-import os
 from typing import Union
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "Instructions", "Week 2"))
+
 from loader import Email, Scenario
 from app.models.calendar import CalendarResponse
 from app.models.todo import TodoResponse
